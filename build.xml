@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="taoMigrate" basedir="." default="build">
+    <property file="build.properties" />
+    <property name="backup.folder" value="./backup/${tao.old.version}-${tao.new.version}" />
+
+    <target name="prepare">
+       
+        <mkdir dir="${backup.folder}" />
+    </target>
+    <target name="backup_db" depends="prepare">
+        <exec command="mysqldump -h${db.host} -u${db.user} -p${db.pass} ${db.name}  > ${db.host}_${db.name}.sql " escape="false" />
+        <zip destfile="${backup.folder}/current_backup_db.zip">
+            <fileset dir=".">
+                <include name="${db.host}_${db.name}.sql" />
+            </fileset>
+        </zip>
+        <delete file="${db.host}_${db.name}.sql" />
+    </target>
+
+    <target name="restore_db">
+        <unzip file="${backup.folder}/current_backup_db.zip" todir="." />
+        <exec command="mysql -h${db.host} -u${db.user} -p${db.pass} ${db.name} &lt; ${db.host}_${db.name}.sql " />
+        <delete file="${db.host}_${db.name}.sql" />
+    </target>
+
+    <target name="zip_old" depends="prepare">
+        <zip destfile="${backup.folder}/current_backup.zip">
+            <fileset dir="${tao.old.folder}">
+                <include name="**/**" />
+            </fileset>
+        </zip>
+    </target>
+
+    <target name="restore_old">
+        <delete dir="./backup/tmp/" />
+        <phingcall target="backup_db">
+            <property name="backup.folder" value="./backup/tmp/${tao.old.version}-${tao.new.version}"/>
+
+        </phingcall>
+        
+        <phingcall target="zip_old">
+            <property name="backup.folder" value="./backup/tmp/${tao.old.version}-${tao.new.version}"/>
+
+        </phingcall>
+        <phingcall target="restore_db" />
+         <unzip file="${backup.folder}/current_backup_db.zip" todir="${tao.old.folder}" />
+
+    </target>
+    <target name="info">
+        <echo msg ="Available Command : " />
+    </target>
+    <target name="build">
+        <echo msg="Old version : ${tao.old.version}" />
+            
+         <echo msg="New version : ${tao.new.version}" />
+    </target>
+</project>
