@@ -32,14 +32,15 @@
         </zip>
     </target>
 
+    <target name="backup_old">
+        <phingcall target="backup_db"/>
+        <phingcall target="zip_old"/>
+    </target>
+
     <target name="restore_old">
         <delete dir="./backup/tmp/" />
-        <phingcall target="backup_db">
-            <property name="backup.folder" value="./backup/tmp/${tao.old.version}-${tao.new.version}"/>
 
-        </phingcall>
-        
-        <phingcall target="zip_old">
+        <phingcall target="backup_old">
             <property name="backup.folder" value="./backup/tmp/${tao.old.version}-${tao.new.version}"/>
 
         </phingcall>
