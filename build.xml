@@ -48,8 +48,12 @@
          <unzip file="${backup.folder}/current_backup_db.zip" todir="${tao.old.folder}" />
 
     </target>
-    <target name="info">
+    <target name="help">
         <echo msg ="Available Command : " />
+        <exec executable="phing"
+              passthru="true">
+            <arg value="-l" />
+        </exec>
     </target>
     <target name="build">
         <echo msg="Old version : ${tao.old.version}" />
