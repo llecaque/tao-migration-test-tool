@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="taoMigrate" basedir="." default="build">
+<project name="Migration Test Tool" basedir="." default="build">
     <property file="build.properties" />
-    <property name="backup.folder" value="./backup/${tao.old.version}-${tao.new.version}" />
+    <property name="backup.folder" value="./backup/${project}/${tao.old.version}-${tao.new.version}" />
 
     <target name="prepare">
        
         <mkdir dir="${backup.folder}" />
     </target>
+
+    <target name="store_conf" depends="prepare">
+        <copy file="build.properties" tofile="backup/${project}/build.properties" /> 
+    </target>
+
     <target name="backup_db" depends="prepare">
         <exec command="mysqldump -h${db.host} -u${db.user} -p${db.pass} ${db.name}  > ${db.host}_${db.name}.sql " escape="false" />
         <zip destfile="${backup.folder}/current_backup_db.zip">
@@ -26,8 +31,10 @@
 
     <target name="zip_old" depends="prepare">
         <zip destfile="${backup.folder}/current_backup.zip">
-            <fileset dir="${tao.old.folder}">
+            <fileset dir="${tao.old.folder}" defaultexcludes="false">
                 <include name="**/**" />
+                <include name="**/*.svn" />  
+                 <include name="**/*.svn/**" />  
             </fileset>
         </zip>
     </target>
@@ -37,17 +44,37 @@
         <phingcall target="zip_old"/>
     </target>
 
+    <target name="setright">
+        <chown file="${tao.old.folder}" user="${www.data.user}" group="${www.data.group}" />
+        <chmod file="${tao.old.folder}" mode="0775" />
+        <exec command="chown -R ${www.data.user}:${www.data.group} ${tao.old.folder}" />
+        <exec command="chmod -R g=rwx ${tao.old.folder}" />
+    </target>
+
     <target name="restore_old">
         <delete dir="./backup/tmp/" />
 
         <phingcall target="backup_old">
-            <property name="backup.folder" value="./backup/tmp/${tao.old.version}-${tao.new.version}"/>
+            <property name="backup.folder" value="${backup.folder}/new/${tao.old.version}-${tao.new.version}"/>
 
         </phingcall>
         <phingcall target="restore_db" />
-         <unzip file="${backup.folder}/current_backup_db.zip" todir="${tao.old.folder}" />
+        <delete dir="${tao.old.folder}" />
+        <unzip file="${backup.folder}/current_backup.zip" todir="${tao.old.folder}" />
+        <phingcall target="setright" />
 
     </target>
+
+    <target name="go_back_to_new">
+        <delete dir="${tao.old.folder}" />
+        <property name="tmp.folder" value="${backup.folder}/new/${tao.old.version}-${tao.new.version}"/>
+        <unzip file="${tmp.folder}/current_backup.zip" todir="${tao.old.folder}" />
+        <phingcall target="setright" />
+        <phingcall target="restore_db">
+            <property name="backup.folder" value="${tmp.folder}"/>
+        </phingcall>
+    </target>
+
     <target name="help">
         <echo msg ="Available Command : " />
         <exec executable="phing"
