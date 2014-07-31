@@ -1,0 +1,15 @@
+project=
+
+tao.old.folder=
+
+tao.old.version=2.5
+tao.new.version=2.6
+
+db.user=
+db.pass=
+db.name=
+db.host=
+
+
+www.data.group=www-data
+www.data.user=
